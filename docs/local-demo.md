@@ -1,6 +1,6 @@
 # Run DSER Locally: Browser Demo and Terminal CLI
 
-DSER now includes two local interfaces built on the same deterministic decision runner. Neither interface requires an API key, external model, database, network integration, or side-effecting tool. They are designed to make evidence reconciliation visible before you connect DSER to a real agent stack.
+DSER includes two local interfaces built on the same deterministic decision runner. Neither requires an API key, external model, database, or side-effecting tool. By default they run entirely in memory; when you explicitly supply a public URL, they can make one bounded HTTP request with `requests` and convert the returned page into source-attributed document evidence.
 
 | Interface | Best for | Command |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ The server binds to `http://127.0.0.1:8765` by default and opens the local page 
 dser-demo --port 9000 --no-browser
 ```
 
-The demo page provides editable controls for task key, goal, risk, current observation, scoring inputs, optional memory, optional verifier response, and a safe local action. Every run shows the final disposition, selected claim, conflict set, score, verifier state, action result, and memory-retention result.
+The demo page provides editable controls for task key, goal, risk, current observation, scoring inputs, optional memory, optional verifier response, optional public HTTP source URL, and a safe local action. Every run shows the final disposition, selected claim, conflict set, score, verifier state, action result, memory-retention result, and any fetched-page provenance.
 
 ### Built-in browser scenarios
 
@@ -66,11 +66,14 @@ The default scenario is `conflict`. Available scenarios are `clean`, `conflict`,
 # Print the full trace for scripts, tests, or inspection.
 dser-cli --scenario clean --json
 
+# Fetch a public page with HTTP requests and emit a full source trace.
+dser-cli --scenario clean --url https://example.org --json
+
 # Enter a custom decision interactively.
 dser-cli --interactive
 ```
 
-The interactive flow prompts for current observation data, risk, optional remembered evidence, optional verifier output, and whether to run the safe local action. Score inputs must be between `0` and `1`, and source/risk values must use their DSER serialized names such as `system_of_record` and `medium`.
+The interactive flow prompts for current observation data, risk, optional remembered evidence, optional public HTTP URL, optional verifier output, and whether to run the safe local action. Score inputs must be between `0` and `1`, and source/risk values must use their DSER serialized names such as `system_of_record` and `medium`.
 
 ### Example terminal output
 
@@ -84,6 +87,27 @@ Verification used: True
 Memory written: True
 ```
 
+## Fetch a public page with HTTP requests
+
+Pass a URL through the **Public HTTP(S) source URL** field in the browser demo or with `dser-cli --url`. DSER uses `requests` to retrieve one public HTML, plain-text, or JSON page. The local runner changes the current observation’s source to `document` and records the final URL, page title, response metadata, and a bounded text excerpt as the claim’s provenance and support.
+
+```bash
+dser-cli --scenario clean --url https://example.org --json
+```
+
+The command’s `current_value` remains a developer-provided claim value. The fetched text is **supporting evidence**, not an automatic fact extractor or truth guarantee. Use a domain-specific parser and validation layer if you need to turn page content into a structured value.
+
+| Guardrail | Local fetcher behavior |
+| --- | --- |
+| URL scope | Allows only public `http` and `https` URLs on standard ports 80 and 443. |
+| Destination safety | Blocks embedded credentials and private, loopback, link-local, multicast, and reserved network destinations. |
+| Redirects | Revalidates each target and permits at most three redirects. |
+| Response scope | Accepts HTML, plain text, and JSON; rejects other content types and non-success responses. |
+| Resource bounds | Uses an 8-second default timeout and reads at most 1 MB. |
+| Browser behavior | Does not execute JavaScript, authenticate, submit forms, or bypass access controls. |
+
+Use HTTP retrieval only on content you are authorized to access, and respect a site’s terms, robots policy, copyright, and rate limits. Do not use the local demo as an open network proxy or production crawler.
+
 ## How the local runner maps to DSER
 
 Both interfaces call `run_local_decision()` from `dser.local`. The helper creates a current `Claim`, optionally stores a deliberately older memory episode, optionally configures a deterministic `MappingVerifier`, and uses a standard `DSERAgent` with `ReconciliationPolicy` and `InMemoryStore`.
@@ -95,6 +119,7 @@ Both interfaces call `run_local_decision()` from `dser.local`. The helper create
 | Risk dropdown or CLI field | `AgentTask.risk` |
 | Verified value | `Claim` returned by `MappingVerifier` |
 | Run action toggle | `ActionResult` callback that runs only after `ACT` |
+| Public HTTP source URL or `--url` | `FetchedPage` converted into a `DOCUMENT` claim with URL and excerpt support |
 
 The action is intentionally a local message—not an email, database update, or external API call. Replace the reference adapters only after reviewing the [quickstart](quickstart.md), [API reference](api-reference.md), [architecture contract](design.md), and [security policy](../SECURITY.md).
 

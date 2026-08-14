@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .agent import DSERAgent
+from .http_fetch import FetchedPage, fetch_public_page
 from .memory import InMemoryStore
 from .models import ActionResult, AgentResult, AgentTask, Claim, MemoryRecord, RiskLevel, SourceKind
 from .policy import ReconciliationPolicy
@@ -32,6 +33,7 @@ def demo_payloads() -> dict[str, dict[str, Any]]:
             "verify": False,
             "verification_value": "",
             "run_action": True,
+            "fetch_url": "",
         },
         "conflict": {
             "key": "customer.delivery_preference",
@@ -49,6 +51,7 @@ def demo_payloads() -> dict[str, dict[str, Any]]:
             "verify": True,
             "verification_value": "sms",
             "run_action": True,
+            "fetch_url": "",
         },
         "uncertain": {
             "key": "shipping.address",
@@ -66,6 +69,7 @@ def demo_payloads() -> dict[str, dict[str, Any]]:
             "verify": False,
             "verification_value": "",
             "run_action": True,
+            "fetch_url": "",
         },
     }
 
@@ -108,11 +112,11 @@ def _claim_dict(claim: Claim) -> dict[str, Any]:
     }
 
 
-def result_to_dict(result: AgentResult) -> dict[str, Any]:
+def result_to_dict(result: AgentResult, web_fetch: FetchedPage | None = None) -> dict[str, Any]:
     """Convert a local demo result into JSON-safe primitive values."""
 
     decision = result.decision
-    return {
+    output = {
         "task": {
             "key": result.task.key,
             "goal": result.task.goal,
@@ -137,6 +141,18 @@ def result_to_dict(result: AgentResult) -> dict[str, Any]:
         "verification_used": result.verification_used,
         "memory_written": result.memory_written,
     }
+    if web_fetch is not None:
+        output["web_fetch"] = {
+            "requested_url": web_fetch.requested_url,
+            "final_url": web_fetch.final_url,
+            "status_code": web_fetch.status_code,
+            "content_type": web_fetch.content_type,
+            "title": web_fetch.title,
+            "excerpt": web_fetch.excerpt(),
+            "bytes_read": web_fetch.bytes_read,
+            "fetched_at": web_fetch.fetched_at.isoformat(),
+        }
+    return output
 
 
 def run_local_decision(payload: dict[str, Any]) -> dict[str, Any]:
@@ -150,15 +166,28 @@ def run_local_decision(payload: dict[str, Any]) -> dict[str, Any]:
     key = _text(payload, "key")
     current_value = _text(payload, "current_value")
     provenance = _text(payload, "provenance") or None
+    fetch_url = _text(payload, "fetch_url")
+    web_fetch: FetchedPage | None = None
+    source = _source(_text(payload, "current_source") or SourceKind.SYSTEM_OF_RECORD.value)
+    support: tuple[str, ...] = ("local-demo:current-observation",) if provenance else ()
+    if fetch_url:
+        web_fetch = fetch_public_page(fetch_url)
+        source = SourceKind.DOCUMENT
+        provenance = web_fetch.final_url
+        title = web_fetch.title or "Untitled HTTP document"
+        support = (
+            f"HTTP {web_fetch.status_code} {web_fetch.content_type}",
+            f"{title}: {web_fetch.excerpt()}",
+        )
     current_claim = Claim(
         key=key,
         value=current_value,
-        source=_source(_text(payload, "current_source") or SourceKind.SYSTEM_OF_RECORD.value),
+        source=source,
         authority=_number(payload, "authority"),
         confidence=_number(payload, "confidence"),
         relevance=_number(payload, "relevance"),
         provenance=provenance,
-        support=("local-demo:current-observation",) if provenance else (),
+        support=support,
     )
     task = AgentTask(
         key=key,
@@ -217,4 +246,4 @@ def run_local_decision(payload: dict[str, Any]) -> dict[str, Any]:
             message=f"Local demo action accepted {claim.key}={claim.value}.",
             output={"applied_key": claim.key, "applied_value": claim.value},
         )
-    return result_to_dict(agent.decide(task, observations=(current_claim,), execute=execute))
+    return result_to_dict(agent.decide(task, observations=(current_claim,), execute=execute), web_fetch=web_fetch)

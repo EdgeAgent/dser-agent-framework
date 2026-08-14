@@ -20,6 +20,7 @@ from dser import (
 | Task policy | `AgentTask`, `RiskLevel`, `Disposition`, `Decision`, `ReconciliationPolicy`, `PolicyWeights` | Bound a decision and determine the safe disposition. |
 | Memory | `MemoryRecord`, `InMemoryStore` | Retrieve candidate context and retain validated outcomes selectively. |
 | Verification | `VerificationTool`, `MappingVerifier` | Resolve conflicts against an authoritative source. |
+| HTTP retrieval | `fetch_public_page`, `FetchedPage`, `WebFetchError` | Fetch bounded public HTTP text as source-attributed document evidence. |
 
 ---
 
@@ -364,6 +365,71 @@ verifier = MappingVerifier({
 ```
 
 ---
+
+## HTTP retrieval
+
+### `fetch_public_page()`
+
+```python
+fetch_public_page(
+    url: str,
+    *,
+    timeout_seconds: float = 8.0,
+    max_bytes: int = 1_000_000,
+    session: requests.Session | None = None,
+) -> FetchedPage
+```
+
+Fetches one **public, unauthenticated** HTTP or HTTPS resource using `requests`. The function extracts readable text from HTML or normalizes plain-text and JSON responses. It is intended for document evidence, not as a general browser, crawler, login client, or unrestricted network proxy.
+
+| Parameter | Behavior |
+| --- | --- |
+| `url` | Required `http` or `https` URL. Credentials in URLs are rejected. |
+| `timeout_seconds` | Per-request timeout from greater than `0` through `30` seconds; defaults to `8`. |
+| `max_bytes` | Response limit from `1,024` through `1,000,000` bytes; defaults to `1,000,000`. |
+| `session` | Optional `requests.Session` primarily for controlled testing or custom transport behavior. |
+
+The fetcher accepts `text/html`, `text/plain`, and `application/json`. It reads at most 1 MB, follows no more than three redirects, validates every redirect target, and supplies an identifying user agent. It blocks credential-bearing URLs, non-standard ports, local/private/link-local/multicast/reserved destinations, unsupported content types, non-success responses, and oversized responses.
+
+> The fetcher provides source text; it does **not** infer the truth of a claim from that text. In the local demo, the developer supplies the claim value and DSER stores the URL, title, response metadata, and bounded excerpt as document support. Build domain-specific extraction and validation above this layer.
+
+### `FetchedPage`
+
+```python
+FetchedPage(
+    requested_url: str,
+    final_url: str,
+    status_code: int,
+    content_type: str,
+    title: str | None,
+    text: str,
+    fetched_at: datetime,
+    bytes_read: int,
+)
+```
+
+| Field | Description |
+| --- | --- |
+| `requested_url` | URL supplied to the fetcher. |
+| `final_url` | Final validated URL after redirects. |
+| `status_code` | HTTP success status returned by the final resource. |
+| `content_type` | Normalized response MIME type. |
+| `title` | HTML title, when available. |
+| `text` | Bounded, normalized readable response text. |
+| `fetched_at` | UTC fetch timestamp. |
+| `bytes_read` | Number of response bytes accepted before text extraction. |
+
+#### `FetchedPage.excerpt()`
+
+```python
+page.excerpt(limit: int = 1_200) -> str
+```
+
+Returns a compact, single-line slice of the extracted text for claim support metadata.
+
+### `WebFetchError`
+
+`WebFetchError` is a `ValueError` subclass raised when a URL, network response, redirect, size, content type, or destination fails the retrieval contract. Treat it as a non-authoritative observation failure: log the error, ask for a different source, or defer the DSER task. Do not silently fall back to an unverified answer.
 
 ## Results and actions
 

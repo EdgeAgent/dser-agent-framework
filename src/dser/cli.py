@@ -47,6 +47,8 @@ def interactive_payload() -> dict[str, Any]:
         memory_value = _prompt("Remembered value", "email")
         memory_age_days = _prompt("Age of remembered value in days", "90")
 
+    fetch_url = _prompt("Public HTTP(S) URL to fetch as document evidence (optional)", "")
+
     verify = _yes_no("Enable authoritative verification on conflict", True)
     verification_value = ""
     if verify:
@@ -68,6 +70,7 @@ def interactive_payload() -> dict[str, Any]:
         "verify": verify,
         "verification_value": verification_value,
         "run_action": _yes_no("Run the safe local demo action if DSER permits it", True),
+        "fetch_url": fetch_url,
     }
 
 
@@ -85,6 +88,10 @@ def _print_result(result: dict[str, Any]) -> None:
         print(f"Conflicting evidence: {values}")
     if decision["required_evidence"]:
         print("Required evidence: " + "; ".join(decision["required_evidence"]))
+    if result.get("web_fetch"):
+        fetched = result["web_fetch"]
+        print(f"HTTP source: {fetched['title'] or 'Untitled document'} ({fetched['content_type']}, HTTP {fetched['status_code']})")
+        print(f"Fetched URL: {fetched['final_url']}")
     if result["action"]:
         print(f"Action: {result['action']['message']}")
     else:
@@ -115,12 +122,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the complete decision trace as JSON.",
     )
+    parser.add_argument(
+        "--url",
+        help="Fetch a public HTTP(S) page and use its text as source-attributed document evidence.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     payload = interactive_payload() if args.interactive else demo_payloads()[args.scenario]
+    if args.url:
+        payload["fetch_url"] = args.url
     try:
         result = run_local_decision(payload)
     except (TypeError, ValueError) as exc:

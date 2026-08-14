@@ -6,7 +6,7 @@
     <a href="https://github.com/EdgeAgent/dser-agent-framework"><img src="https://img.shields.io/badge/Status-Alpha-8b5cf6?style=flat-square" alt="Project status: alpha"></a>
     <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11 or later">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-16a34a?style=flat-square" alt="MIT License"></a>
-    <img src="https://img.shields.io/badge/Runtime%20dependencies-0-0f766e?style=flat-square" alt="Zero runtime dependencies">
+    <img src="https://img.shields.io/badge/HTTP%20fetch-requests-0f766e?style=flat-square" alt="Requests-backed optional HTTP fetch">
   </p>
 </p>
 
@@ -73,7 +73,7 @@ The framework deliberately exposes five dispositions:
 
 ## Start in 60 seconds
 
-DSER has **zero runtime dependencies** beyond Python 3.11+.
+DSER requires Python 3.11+. Its optional public HTTP retrieval adapter uses `requests`; no model, database, or hosted service is required.
 
 ```bash
 git clone https://github.com/EdgeAgent/dser-agent-framework.git
@@ -105,6 +105,9 @@ dser-demo
 # Run a readable terminal scenario or emit a full JSON trace
 dser-cli --scenario conflict
 dser-cli --scenario clean --json
+
+# Fetch one public source page as document evidence
+dser-cli --scenario clean --url https://example.org --json
 
 # Build a custom local decision through prompts
 dser-cli --interactive

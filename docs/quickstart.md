@@ -6,7 +6,7 @@ This tutorial takes you from a clean environment to a complete **Dual-Stream Evi
 
 ## 1. Install the package
 
-DSER requires Python 3.11 or later and has no runtime dependencies.
+DSER requires Python 3.11 or later. Its optional public HTTP retrieval adapter installs `requests`; no model, database, or hosted service is required.
 
 ```bash
 git clone https://github.com/EdgeAgent/dser-agent-framework.git

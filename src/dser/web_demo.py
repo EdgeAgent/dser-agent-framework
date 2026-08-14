@@ -74,7 +74,7 @@ PAGE = r"""<!doctype html>
     <div class="eyebrow">Local interactive demo</div>
     <h1>DSER Local Lab</h1>
     <p class="lede">Change the evidence, risk, memory, and verification settings. DSER will show whether an agent should <strong>act, plan, verify, ask,</strong> or <strong>defer</strong>—and why.</p>
-    <span class="pill"><span class="dot"></span>Runs entirely on 127.0.0.1</span><span class="pill">No API key</span><span class="pill">No external action</span>
+    <span class="pill"><span class="dot"></span>Runs entirely on 127.0.0.1</span><span class="pill">Optional public HTTP fetch</span><span class="pill">No API key</span><span class="pill">No external action</span>
     <div class="scenario-row">
       <button type="button" data-scenario="clean">Load clean evidence</button>
       <button type="button" data-scenario="conflict">Load verified conflict</button>
@@ -96,6 +96,7 @@ PAGE = r"""<!doctype html>
             <label>Confidence<input required type="number" min="0" max="1" step="0.01" name="confidence" value="0.99"></label>
             <label>Relevance<input required type="number" min="0" max="1" step="0.01" name="relevance" value="1.00"></label>
             <label>Provenance<input name="provenance" value="crm-api:customer-42"></label>
+            <label class="wide">Public HTTP(S) source URL (optional)<input type="url" name="fetch_url" placeholder="https://example.org/source"><span class="hint">Fetches public HTML, text, or JSON through requests. When present, the fetched page becomes source-attributed document evidence.</span></label>
           </div></fieldset>
           <fieldset><legend>Memory & verification</legend>
             <div class="checks"><label><input type="checkbox" name="include_memory" checked> Include remembered evidence</label><label><input type="checkbox" name="verify" checked> Enable verifier</label><label><input type="checkbox" name="run_action" checked> Run safe local action</label></div>
@@ -110,7 +111,7 @@ PAGE = r"""<!doctype html>
         <div id="output"><div class="empty">Load a scenario or change the fields, then run a decision. The output will show the selected claim, conflicts, verification path, action status, and memory-retention result.</div></div>
       </section>
     </div>
-    <p class="footer">DSER Local Lab is a deterministic educational demo. It demonstrates evidence reconciliation and does not perform network calls, authorization, or side effects outside its in-memory example.</p>
+    <p class="footer">DSER Local Lab is an educational demo. It performs no external action; an optional URL triggers one bounded HTTP request for public HTML, text, or JSON only. Private, loopback, credential-bearing, oversized, and unsupported destinations are rejected.</p>
   </main>
 <script>
   let examples = {};
@@ -124,17 +125,19 @@ PAGE = r"""<!doctype html>
     });
   }
   function claimHtml(claim) {
-    return `<div class="claim"><strong>${esc(claim.key)} = ${esc(claim.value)}</strong><small>${esc(claim.source)} · authority ${esc(claim.authority)} · provenance ${esc(claim.provenance || 'none')}</small></div>`;
+    const support = claim.support && claim.support.length ? `<small>Support: ${esc(claim.support.join(' · '))}</small>` : '';
+    return `<div class="claim"><strong>${esc(claim.key)} = ${esc(claim.value)}</strong><small>${esc(claim.source)} · authority ${esc(claim.authority)} · provenance ${esc(claim.provenance || 'none')}</small>${support}</div>`;
   }
   function render(result) {
     const d = result.decision, selected = d.selected_claim;
     const conflicts = d.conflicts.length ? d.conflicts.map(claimHtml).join('') : '<p class="hint">No material conflicting values.</p>';
     const required = d.required_evidence.length ? `<div class="trace"><h3>Required evidence</h3><p class="reason">${esc(d.required_evidence.join('; '))}</p></div>` : '';
-    output.innerHTML = `<div class="decision-title"><span class="status ${esc(d.disposition)}">${esc(d.disposition)}</span><strong>Evidence score ${esc(d.score)}</strong></div><p class="reason">${esc(d.reason)}</p><div class="metric-grid"><div class="metric"><span>Selected value</span><strong>${selected ? esc(selected.value) : '—'}</strong></div><div class="metric"><span>Selected source</span><strong>${selected ? esc(selected.source) : '—'}</strong></div><div class="metric"><span>Verifier used</span><strong>${result.verification_used ? 'yes' : 'no'}</strong></div><div class="metric"><span>Memory retained</span><strong>${result.memory_written ? 'yes' : 'no'}</strong></div></div><div class="trace"><h3>Conflicting claims</h3>${conflicts}</div>${result.action ? `<div class="trace"><h3>Local action</h3><p class="reason">${esc(result.action.message)}</p></div>` : ''}${required}<div class="trace"><h3>Evidence ledger (${result.claims.length})</h3>${result.claims.map(claimHtml).join('')}</div>`;
+    const fetched = result.web_fetch ? `<div class="trace"><h3>HTTP source fetched</h3><div class="claim"><strong>${esc(result.web_fetch.title || 'Untitled document')}</strong><small>${esc(result.web_fetch.content_type)} · HTTP ${esc(result.web_fetch.status_code)} · ${esc(result.web_fetch.bytes_read)} bytes</small><small>${esc(result.web_fetch.final_url)}</small><small>${esc(result.web_fetch.excerpt)}</small></div></div>` : '';
+    output.innerHTML = `<div class="decision-title"><span class="status ${esc(d.disposition)}">${esc(d.disposition)}</span><strong>Evidence score ${esc(d.score)}</strong></div><p class="reason">${esc(d.reason)}</p><div class="metric-grid"><div class="metric"><span>Selected value</span><strong>${selected ? esc(selected.value) : '—'}</strong></div><div class="metric"><span>Selected source</span><strong>${selected ? esc(selected.source) : '—'}</strong></div><div class="metric"><span>Verifier used</span><strong>${result.verification_used ? 'yes' : 'no'}</strong></div><div class="metric"><span>Memory retained</span><strong>${result.memory_written ? 'yes' : 'no'}</strong></div></div>${fetched}<div class="trace"><h3>Conflicting claims</h3>${conflicts}</div>${result.action ? `<div class="trace"><h3>Local action</h3><p class="reason">${esc(result.action.message)}</p></div>` : ''}${required}<div class="trace"><h3>Evidence ledger (${result.claims.length})</h3>${result.claims.map(claimHtml).join('')}</div>`;
   }
   async function loadExamples() { examples = await fetch('/api/examples').then(r => r.json()); applyPayload(examples.conflict); }
   document.querySelectorAll('[data-scenario]').forEach(button => button.addEventListener('click', () => applyPayload(examples[button.dataset.scenario])));
-  form.addEventListener('submit', async event => { event.preventDefault(); const payload = {}; new FormData(form).forEach((value, key) => payload[key] = value); ['include_memory','verify','run_action'].forEach(key => payload[key] = form.elements.namedItem(key).checked); output.innerHTML = '<div class="empty">Reconciling current evidence, memory, and verification…</div>'; try { const response = await fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Local demo failed'); render(data); } catch (error) { output.innerHTML = `<div class="error"><strong>Input error</strong><br>${esc(error.message)}</div>`; } });
+  form.addEventListener('submit', async event => { event.preventDefault(); const payload = {}; new FormData(form).forEach((value, key) => payload[key] = value); ['include_memory','verify','run_action'].forEach(key => payload[key] = form.elements.namedItem(key).checked); output.innerHTML = payload.fetch_url ? '<div class="empty">Fetching public source, then reconciling evidence…</div>' : '<div class="empty">Reconciling current evidence, memory, and verification…</div>'; try { const response = await fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Local demo failed'); render(data); } catch (error) { output.innerHTML = `<div class="error"><strong>Input error</strong><br>${esc(error.message)}</div>`; } });
   loadExamples().catch(error => output.innerHTML = `<div class="error">Could not load built-in scenarios: ${esc(error.message)}</div>`);
 </script>
 </body>

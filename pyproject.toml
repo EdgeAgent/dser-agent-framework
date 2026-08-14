@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "A provenance-aware dual-stream reconciliation framework for tool-using AI agents."
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = ["requests>=2.31,<3"]
 license = {file = "LICENSE"}
 authors = [
   {name = "Manus AI"}
