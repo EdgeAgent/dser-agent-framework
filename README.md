@@ -18,7 +18,7 @@
 Current evidence  +  Retrieved memory  +  Trusted verification  =  Auditable action
 ```
 
-[Quick start](#start-in-60-seconds) · [See the conflict loop](#the-dser-loop) · [Read the design](docs/design.md) · [Run the example](examples/resolve_conflict.py)
+[Quick start](#start-in-60-seconds) · [Developer tutorial](docs/quickstart.md) · [API reference](docs/api-reference.md) · [See the conflict loop](#the-dser-loop) · [Read the design](docs/design.md) · [Run the example](examples/resolve_conflict.py)
 
 ---
 
@@ -232,6 +232,7 @@ See [SECURITY.md](SECURITY.md) and the complete [architecture contract](docs/des
 ```bash
 python3 -m unittest discover -s tests -v
 python3 -m dser
+python3 examples/quickstart.py
 python3 examples/resolve_conflict.py
 ```
 
