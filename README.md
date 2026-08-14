@@ -18,7 +18,7 @@
 Current evidence  +  Retrieved memory  +  Trusted verification  =  Auditable action
 ```
 
-[Quick start](#start-in-60-seconds) · [Developer tutorial](docs/quickstart.md) · [API reference](docs/api-reference.md) · [See the conflict loop](#the-dser-loop) · [Read the design](docs/design.md) · [Run the example](examples/resolve_conflict.py)
+[Quick start](#start-in-60-seconds) · [Run locally](docs/local-demo.md) · [Developer tutorial](docs/quickstart.md) · [API reference](docs/api-reference.md) · [See the conflict loop](#the-dser-loop) · [Read the design](docs/design.md) · [Run the example](examples/resolve_conflict.py)
 
 ---
 
@@ -93,6 +93,24 @@ You should see the built-in demonstration resolve a stale `annual` plan from mem
   "memory_written": true
 }
 ```
+
+## Run DSER locally
+
+The repository includes both a visual browser lab and a terminal-first interface. Each runs entirely on your machine with deterministic in-memory evidence and no API key.
+
+```bash
+# Open DSER Local Lab at http://127.0.0.1:8765
+dser-demo
+
+# Run a readable terminal scenario or emit a full JSON trace
+dser-cli --scenario conflict
+dser-cli --scenario clean --json
+
+# Build a custom local decision through prompts
+dser-cli --interactive
+```
+
+The browser demo makes evidence, memory, risk, verification, and decision traces visible; the CLI is fast to automate and inspect in scripts. See the complete [local interface guide](docs/local-demo.md).
 
 ## Use it in three steps
 

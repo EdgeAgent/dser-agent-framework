@@ -241,4 +241,4 @@ Weights must total `1.0` within a small floating-point tolerance. Scores rank su
 
 ## Next steps
 
-Read the [API reference](api-reference.md) for the full public surface, [design document](design.md) for the architecture contract, and [security policy](../SECURITY.md) before connecting DSER to sensitive tools.
+Run the [local browser and terminal guide](local-demo.md) to explore DSER interactively, then read the [API reference](api-reference.md) for the full public surface, [design document](design.md) for the architecture contract, and [security policy](../SECURITY.md) before connecting DSER to sensitive tools.

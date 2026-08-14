@@ -22,6 +22,10 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
 ]
 
+[project.scripts]
+dser-cli = "dser.cli:main"
+dser-demo = "dser.web_demo:main"
+
 [project.urls]
 Repository = "https://github.com/EdgeAgent/dser-agent-framework"
 
