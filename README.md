@@ -167,6 +167,41 @@ DSER is intentionally **provider-independent**. It is a lightweight control laye
 
 The core framework does **not** bundle an LLM, database, or hosted API. That keeps its decisions testable, portable, and easier to reason about.
 
+## Capability benchmark: where DSER fits
+
+> **This is a documented capability comparison—not a standardized performance benchmark.** DSER has not been run against LangChain, AutoGen, or CrewAI on a shared latency, cost, task-success, or quality dataset. The table compares the current reference implementation with each project’s first-party overview documentation, reviewed **14 August 2026**. “Application-level” means the behavior may be built with user code, middleware, extensions, or companion products, but is not presented as a dedicated core primitive in the reviewed overview. [1] [2] [3]
+
+DSER is not trying to replace a full agent runtime. It is designed to be the **evidence-reconciliation layer** inside a larger system when an agent must decide whether to trust current input, retrieved memory, or an authoritative verifier.
+
+| Comparison dimension | DSER | LangChain | Microsoft AutoGen | CrewAI |
+| --- | --- | --- | --- | --- |
+| **Primary purpose** | Reconcile current evidence, memory, and verification before a decision. | Configurable model-and-tool agent harness. | Build conversational and event-driven single/multi-agent applications. | Orchestrate autonomous teams and structured workflows. |
+| **Core abstraction** | `Claim` + `EvidenceLedger` + `ReconciliationPolicy`. | Agent, model, tool, prompt, and middleware. | AgentChat plus event-driven Core and extensions. | Stateful Flows plus collaborative Crews. |
+| **LLM / provider layer** | Provider-neutral; bring an adapter. | Broad model-provider interface. | Model clients and extensions. | LLM-backed agents and tool integrations. |
+| **Tool / API integration** | Typed observation, verifier, and action-executor contracts. | Native tools with configurable middleware and policies. | Extensions include MCP, Assistant API, code execution, and distributed runtimes. | Agents can connect to APIs, databases, and local tools. |
+| **Single-agent applications** | Yes—when the key problem is evidence-aware control. | Yes—core design target. | Yes—via AgentChat. | Yes—through a Flow or a single-agent Crew. |
+| **Multi-agent orchestration** | No; pair DSER with an orchestrator when needed. | Application-level or through the LangGraph ecosystem. | First-class target for AgentChat and Core. | First-class target through Crews coordinated by Flows. |
+| **Workflow / state control** | One reconciliation cycle; application owns durable orchestration. | Composable; durable execution and persistence are available through LangGraph. | Core supports deterministic and dynamic event-driven workflows. | Flows provide state, events, branching, loops, and control flow. |
+| **Tracing / evaluation** | Structured `AgentResult`; no hosted observability service. | LangSmith supports tracing, debugging, evaluation, and monitoring. | Studio provides a prototyping UI; applications can add their own observability. | Application-level / platform-specific; the reviewed overview emphasizes workflow reliability rather than a dedicated tracing product. |
+| **First-class source provenance** | **Yes.** Claims carry source, authority, timestamps, provenance, and support. | Application-level metadata and middleware design. | Application-level message/event and extension design. | Application-level Flow/Crew state and task design. |
+| **Native conflict detection** | **Yes.** The ledger detects divergent values for the same decision key. | Application-level policy or middleware. | Application-level agent/workflow logic. | Application-level Flow/Crew logic. |
+| **Risk-aware verification gate** | **Yes.** Medium-or-higher-risk material conflicts route to `VERIFY`; outcomes can be `ACT`, `PLAN`, `ASK`, or `DEFER`. | Application-level guardrail or tool-policy design. | Application-level workflow and agent design. | Application-level Flow and task design. |
+| **Selective memory retention** | **Yes.** Retains only validated, useful, attributable outcomes. | Application-level or companion-stack design. | Application-level agent memory/state design. | Application-level Flow/Crew state and storage design. |
+| **Runtime footprint** | Python 3.11+ with zero runtime dependencies in the reference implementation. | Framework plus selected model/integration packages. | Framework modules plus selected model/extension packages. | Framework plus selected LLM/tool integrations. |
+| **Best fit** | Add verifiable evidence arbitration to an existing agent stack. | Compose a highly customizable tool-using agent. | Build event-driven or distributed multi-agent applications. | Build role-based agent teams inside structured automations. |
+
+### How to choose
+
+Use **DSER** when your hardest problem is *“Can this agent safely act on what it remembers?”* Use **LangChain** when you need a flexible, provider-rich agent harness. Use **AutoGen** when the central problem is agent-to-agent interaction, event-driven systems, or distributed runtimes. Use **CrewAI** when you want structured business workflows that delegate complex work to role-based agent teams.
+
+A production system can use more than one of these. For example, LangChain, AutoGen, or CrewAI can orchestrate model calls, tools, and collaborators; DSER can sit at a decision boundary to normalize conflicting claims, require verification, and control what enters durable memory.
+
+### Comparison sources
+
+[1]: https://docs.langchain.com/oss/python/langchain/overview "LangChain overview"
+[2]: https://microsoft.github.io/autogen/stable/ "Microsoft AutoGen stable documentation"
+[3]: https://docs.crewai.com/en/introduction "CrewAI introduction"
+
 ## Built for agents with stakes
 
 DSER is useful whenever a wrong “remembered” answer could be worse than a delayed answer.
