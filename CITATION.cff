@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+title: "DSER Agent Framework"
+message: "If you use DSER in research or production work, please cite this software."
+type: software
+authors:
+  - name: "Manus AI"
+version: 0.1.0
+date-released: 2026-08-14
+repository-code: "https://github.com/EdgeAgent/dser-agent-framework"
+license: MIT
+abstract: "A provenance-aware dual-stream reconciliation framework for tool-using AI agents."
+keywords:
+  - AI agents
+  - memory
+  - provenance
+  - verification
